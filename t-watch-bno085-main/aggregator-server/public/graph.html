@@ -1,0 +1,122 @@
+<html>
+
+<head>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.8/c3.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.8/c3.min.js"></script>
+
+	<script src='asyncReq.js'></script>
+	<script>
+		var chart;
+		var lastAddedTS = 0;
+
+		var columns = [["t"], ["x"], ["y"], ["z"], ["w"]]
+		var obj;
+		var starting = true;
+
+		function WebSocketBegin() {
+			mac_addr = window.location.hash.replace("#", "");
+			if ("WebSocket" in window) {
+				console.log("WebSocket is supported by your Browser!");
+
+				// Let us open a web socket
+				var ws = new WebSocket("ws://localhost:3000/");
+
+				ws.onopen = function () {
+					// Web Socket is connected, send data using send()
+					//ws.send("Message to send");
+					console.log("Message is sent...");
+					
+				};
+
+				ws.onmessage = function (evt) {
+					var received_msg = evt.data;
+					console.log(received_msg);
+					obj = received_msg;
+					if (starting) {
+						start();
+						starting = false;
+					}
+				};
+
+				ws.onclose = function () {
+
+					// websocket is closed.
+					console.log("Connection is closed...");
+				};
+			} else {
+
+				// The browser doesn't support WebSocket
+				console.log("WebSocket NOT supported by your Browser!");
+			}
+		}
+
+		function getDataFromServer() {
+			var objT = JSON.parse(obj);
+			//for (var i = 0; i < objT.length; i++) {
+			var timestamp = new Date();
+			if (timestamp > lastAddedTS) {
+				columns[0].push(getTSInFormat(timestamp));
+				columns[1].push(objT.x || 0);
+				columns[2].push(objT.y || 0);
+				columns[3].push(objT.z || 0);
+				columns[4].push(objT.w || 0);
+				lastAddedTS = timestamp;
+			}
+			console.log(columns)
+			//}
+
+			chart.flow({
+				columns: columns
+			});
+		}
+		function getTSInFormat(t) {
+			var x = new Date(t);
+			return x.getFullYear() + "-" + x.getMonth() + "-" + x.getDate() + "T" + x.getHours() + ":" + x.getMinutes() + ":" + x.getSeconds();
+		}
+		function start() {
+
+			console.log(obj)
+			var objT = JSON.parse(obj);
+			// for (var i = 0; i < objT.length; i++) {
+			var timestamp = new Date();
+			columns[0].push(getTSInFormat(timestamp));
+			columns[1].push(objT.x || 0);
+			columns[2].push(objT.y || 0);
+			columns[3].push(objT.z || 0);
+			columns[4].push(objT.w || 0);
+			lastAddedTS = timestamp;
+			// }
+			chart = c3.generate({
+				bindto: '#data',
+				data: {
+					x: 't',
+					xFormat: '%Y-%m-%dT%H:%M:%S',
+					columns: columns
+				},
+				axis: {
+					x: {
+						type: 'timeseries',
+						tick: {
+							format: '%H:%M:%S,%Y-%m-%d',
+						}
+					}
+				}
+			});
+
+
+
+			setInterval("getDataFromServer()", 1000);
+		}
+
+
+	</script>
+</head>
+
+<body style='text-align:center; font-family:Helvetica' onload='WebSocketBegin()'>
+	<h1> Weather Ticker </h1>
+	<div id='data'></div>
+
+</body>
+
+</html>
