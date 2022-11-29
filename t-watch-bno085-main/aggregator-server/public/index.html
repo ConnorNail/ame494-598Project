@@ -7,6 +7,21 @@
   <script src="https://cdn.jsdelivr.net/npm/quaternion@1.1.0/quaternion.min.js"></script>
   <script>
 
+    var data = {
+      "24:0A:C4:08:A6:D0": {
+        id: "robot",
+        rotCalibration: {x: 0, y: 0, z: 0, w: 1},
+        rotLast: {x: 0, y: 0, z: 0, w: 1},
+        accLast: {x: 0, y: 0, z: 0}
+      },
+      "08:3A:F2:44:C8:E8": {
+        id: "human",
+        rotCalibration: {x: 0, y: 0, z: 0, w: 1},
+        rotLast: {x: 0, y: 0, z: 0, w: 1},
+        accLast: {x: 0, y: 0, z: 0}
+      }
+    }
+
     var mac_addr;
     var wZ = 0
     var xZ = 0
@@ -29,9 +44,10 @@
         };
 
         ws.onmessage = function (evt) {
-          var received_msg = evt.data;
+          var received_msg = JSON.parse(evt.data);
           //console.log(received_msg);
-          obj = received_msg;
+          // obj = received_msg;
+          handleData(received_msg)
           updateCube();
         };
 
@@ -47,33 +63,67 @@
       }
     }
 
-    function start() {
-      var id = window.location.hash.replace("#", "");
-      loadFile("./getValue?id=" + id, function (data) {
-        obj = data;
-      });
-    }
-
     function updateCube() {
-      objT = JSON.parse(obj);
       //if (objT.id !== mac_addr) return;
-      document.getElementById("data").innerHTML = obj;
-      w = objT.w
-      x = objT.x
-      y = objT.y
-      z = objT.z
+      // document.getElementById("data").innerHTML = data['24:0A:C4:08:A6:D0'].rotLast.x;
+      w = data['24:0A:C4:08:A6:D0'].rotLast.w
+      x = data['24:0A:C4:08:A6:D0'].rotLast.x
+      y = data['24:0A:C4:08:A6:D0'].rotLast.y
+      z = data['24:0A:C4:08:A6:D0'].rotLast.z
       var q = new Quaternion(w, x, y, z);
       var qC = new Quaternion(wZ, xZ, yZ, zZ).inverse()
       var x = q.mul(qC).toMatrix4();
       document.getElementById("cube").style.transform = 'translateZ(-100px) matrix3d(' + x + ')';
     }
+
+    function calibrate() {
+      console.log("Calibrating...");
+
+      var keys = Object.keys(data)
+      for(var i = 0; i < keys.length; i++) {
+        data[keys[i]].rotCalibration.x = data[keys[i]].rotLast.x;
+        data[keys[i]].rotCalibration.y = data[keys[i]].rotLast.y;
+        data[keys[i]].rotCalibration.z = data[keys[i]].rotLast.z;
+        data[keys[i]].rotCalibration.w = data[keys[i]].rotLast.w;
+      }
+      console.log(data)
+    }
+
+    function handleData(obj) {
+      data[obj.id].rotLast.x = obj.x;
+      data[obj.id].rotLast.y = obj.y;
+      data[obj.id].rotLast.z = obj.z;
+      data[obj.id].rotLast.w = obj.w;
+      data[obj.id].accLast.x = obj.xAcc;
+      data[obj.id].accLast.y = obj.yAcc;
+      data[obj.id].accLast.z = obj.zAcc;
+      console.log(data)
+
+      var q = new Quaternion(obj.x, obj.y, obj.z, obj.w);
+      var qC = new Quaternion(data[obj.id].rotCalibration.x, data[obj.id].rotCalibration.y, data[obj.id].rotCalibration.z, data[obj.id].rotCalibration.w).inverse()
+      var x = q.mul(qC);
+
+      if (data[obj.id].id == "robot") {
+        document.getElementById("data1").innerHTML = x;
+      } else {
+        document.getElementById("data2").innerHTML = x;
+      }
+      
+      // console.log(x)
+    }
   </script>
 </head>
 
 <body style='background:black;color:white' onload='WebSocketBegin()'>
-  <div id='data'></div>
+  <div id='robot'>Robot</div>
+  <div id='data1'></div>
+  <div id='human'>Human</div>
+  <div id='data2'></div>
+
   <div class="scene">
+    <button onclick='calibrate()' style='position:fixed;bottom:5px;right:5px'> Set T-Pose </button>
   </div>
+
   <div id='cube' class="cube">
     <div class="cube__face cube__face--front">front</div>
     <div class="cube__face cube__face--back">back</div>
