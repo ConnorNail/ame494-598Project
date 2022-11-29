@@ -60,12 +60,14 @@ MongoClient.connect(url, function (err, db) {
 
   wss.on('connection', ws => {
     ws.on('message', message => {
-      console.log(`Received message => ${message}`)
+      //console.log(`Received message => ${message}`)
 
       var myobj = JSON.parse(message.toString());
+      myobj.time = new Date().getTime();
+      console.log(myobj)
       dbo.collection("robotSensor").insertOne(myobj, function (err, res) {
         if (err) throw err;
-        console.log("1 document inserted");
+        //console.log("1 document inserted");
         //db.close();
       });
 

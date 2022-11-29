@@ -161,7 +161,6 @@ void setup() {
   Wire.setClock(400000); //Increase I2C data rate to 400kHz
 
   myIMU.enableRotationVector(50); //Send data update every 50ms
-  myIMU.enableAccelerometer(50);
   myIMU.enableLinearAccelerometer(50);
 
   Serial.println(F("Rotation vector enabled"));
@@ -179,8 +178,9 @@ void loop() {
       float quatJ;
       float quatK;
       float quatReal;
-      float accI;
-      float linAccI;
+      float linAccX;
+      float linAccY;
+      float linAccZ;
 
       if (myIMU.dataAvailable() == true)
       {
@@ -188,9 +188,11 @@ void loop() {
         quatJ = myIMU.getQuatJ();
         quatK = myIMU.getQuatK();
         quatReal = myIMU.getQuatReal();
-        accI = myIMU.getAccelX();
-        linAccI = myIMU.getLinAccelX();
-        float quatRadianAccuracy = myIMU.getQuatRadianAccuracy();
+        linAccX = myIMU.getLinAccelX();
+        linAccY = myIMU.getLinAccelY();
+        linAccZ = myIMU.getLinAccelZ();
+        byte quatAccuracy = myIMU.getQuatAccuracy();
+        byte linAccelAccuracy = myIMU.getLinAccelAccuracy();
 
         Serial.print(quatI, 2);
         Serial.print(F(" "));
@@ -198,33 +200,39 @@ void loop() {
         Serial.print(F(" "));
         Serial.print(quatJ, 2);
         Serial.print(F(" "));
-        Serial.println(quatReal, 2);
+        Serial.print(quatReal, 2);
         Serial.print(F(" "));
-        Serial.println(accI, 2);
-        Serial.print(F(" "));
-        Serial.println(linAccI, 2);
+        printAccuracyLevel(quatAccuracy);
 
-        String url = "{\"id\": \"" + mac_address + "\",\"x\":" + quatI + ",\"y\":" + quatJ + ",\"z\":" + quatK + ",\"w\":" + quatReal + "}";
-        //Serial.println(url);
+        Serial.println();
+
+        Serial.print(linAccX, 2);
+        Serial.print(F(" "));
+        Serial.print(linAccY, 2);
+        Serial.print(F(" "));
+        Serial.print(linAccZ, 2);
+        Serial.print(F(" "));
+        printAccuracyLevel(linAccelAccuracy);
+
+        Serial.println();
+
+        String url = "{\"id\": \"" + mac_address + "\",\"x\":" + quatI + ",\"y\":" + quatJ + ",\"z\":" + quatK + ",\"w\":" + quatReal + ",\"xAcc\":" + linAccX + ",\"yAcc\":" + linAccY + ",\"zAcc\":" + linAccZ + "}";
+        Serial.println(url);
         webSocket.sendTXT(url.c_str());
       }
-
-
-
-//      String url = "{\"id\": \"" + mac_address + "\",\"w\":" + quatI + ",\"x\":" + quatJ + ",\"y\":" + quatK + ",\"z\":" + quatReal + "}";
-//      Serial.println(url);
-      // response = httpGETRequest(url.c_str());
-//      webSocket.sendTXT(url.c_str());
-
-      // Serial.println(response);
-
-
-
-
     }
     else {
       Serial.println("WiFi Disconnected");
     }
     lastTime = millis();
   }
+}
+
+//Given a accuracy number, print what it means
+void printAccuracyLevel(byte accuracyNumber)
+{
+  if (accuracyNumber == 0) Serial.print(F("Unreliable"));
+  else if (accuracyNumber == 1) Serial.print(F("Low"));
+  else if (accuracyNumber == 2) Serial.print(F("Medium"));
+  else if (accuracyNumber == 3) Serial.print(F("High"));
 }
