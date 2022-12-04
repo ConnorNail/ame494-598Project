@@ -10,15 +10,15 @@
     var data = {
       "24:0A:C4:08:A6:D0": {
         id: "robot",
-        rotCalibration: {x: 0, y: 0, z: 0, w: 1},
-        rotLast: {x: 0, y: 0, z: 0, w: 1},
-        accLast: {x: 0, y: 0, z: 0}
+        rotCalibration: { x: 0, y: 0, z: 0, w: 1 },
+        rotLast: { x: 0, y: 0, z: 0, w: 1 },
+        accLast: { x: 0, y: 0, z: 0 }
       },
       "08:3A:F2:44:C8:E8": {
         id: "human",
-        rotCalibration: {x: 0, y: 0, z: 0, w: 1},
-        rotLast: {x: 0, y: 0, z: 0, w: 1},
-        accLast: {x: 0, y: 0, z: 0}
+        rotCalibration: { x: 0, y: 0, z: 0, w: 1 },
+        rotLast: { x: 0, y: 0, z: 0, w: 1 },
+        accLast: { x: 0, y: 0, z: 0 }
       }
     }
 
@@ -80,12 +80,15 @@
       console.log("Calibrating...");
 
       var keys = Object.keys(data)
-      for(var i = 0; i < keys.length; i++) {
+      for (var i = 0; i < keys.length; i++) {
         data[keys[i]].rotCalibration.x = data[keys[i]].rotLast.x;
         data[keys[i]].rotCalibration.y = data[keys[i]].rotLast.y;
         data[keys[i]].rotCalibration.z = data[keys[i]].rotLast.z;
         data[keys[i]].rotCalibration.w = data[keys[i]].rotLast.w;
+
+        fetch('http://localhost:1234/setCalibration?id=' + keys[i] + '&x=' + data[keys[i]].rotCalibration.x + '&y=' + data[keys[i]].rotCalibration.y + '&z=' + data[keys[i]].rotCalibration.z + '&w=' + data[keys[i]].rotCalibration.w)
       }
+
       console.log(data)
     }
 
@@ -108,7 +111,7 @@
       } else {
         document.getElementById("data2").innerHTML = x;
       }
-      
+
       // console.log(x)
     }
   </script>
@@ -121,7 +124,7 @@
   <div id='data2'></div>
 
   <div class="scene">
-    <button onclick='calibrate()' style='position:fixed;bottom:5px;right:5px'> Set T-Pose </button>
+    <button onclick='calibrate()'> Set T-Pose </button>
   </div>
 
   <div id='cube' class="cube">

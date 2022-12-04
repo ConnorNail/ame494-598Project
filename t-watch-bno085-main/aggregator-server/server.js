@@ -12,11 +12,16 @@ var qte = require('quaternion-to-euler');
 
 var url = "mongodb://localhost:27017/robotSensorData";
 
+// app.use(bodyParser.json());
+
 app.get("/", function (req, res) {
   res.redirect("index.html")
 });
 
-var values = {}
+var values = {
+  '24:0A:C4:08:A6:D0': { id: '24:0A:C4:08:A6:D0', x: 0, y: 0, z: 0, w: 1 },
+  '08:3A:F2:44:C8:E8': { id: '08:3A:F2:44:C8:E8', x: 0, y: 0, z: 0, w: 1 }
+};
 app.get("/setValue", function (req, res) {
   res.send("1");
   var euler = qte([parseFloat(req.query.w), parseFloat(req.query.x), parseFloat(req.query.y), parseFloat(req.query.z)]);
@@ -34,8 +39,14 @@ app.get("/getValue", function (req, res) {
   res.send(values[req.query.id]);
 });
 
-app.get("/getAllValues", function (req, res) {
-  res.send(JSON.stringify(values));
+app.get("/setCalibration", function (req, res) {
+  res.send("1");
+  req.query.x = parseFloat(req.query.x);
+  req.query.y = parseFloat(req.query.y);
+  req.query.z = parseFloat(req.query.z);
+  req.query.w = parseFloat(req.query.w);
+  values[req.query.id] = req.query;
+  console.log(values);
 });
 
 
@@ -49,7 +60,8 @@ app.listen(port);
 
 
 
-const WebSocket = require('ws')
+const WebSocket = require('ws');
+const e = require("express");
 
 const wss = new WebSocket.Server({ port: 3000 })
 
@@ -64,8 +76,12 @@ MongoClient.connect(url, function (err, db) {
 
       var myobj = JSON.parse(message.toString());
       myobj.time = new Date().getTime();
+      myobj.xRotCal = values[myobj.id].x;
+      myobj.yRotCal = values[myobj.id].y;
+      myobj.zRotCal = values[myobj.id].z;
+      myobj.wRotCal = values[myobj.id].w;
       console.log(myobj)
-      dbo.collection("robotSensor").insertOne(myobj, function (err, res) {
+      dbo.collection("robotSensorDemo").insertOne(myobj, function (err, res) {
         if (err) throw err;
         //console.log("1 document inserted");
         //db.close();
